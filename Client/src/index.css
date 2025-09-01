@@ -1,0 +1,10 @@
+@import "tailwindcss";
+.leaflet-container {
+  z-index: 0 !important; /* Keeps the map below your booking card */
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0 !important; /* Prevents Leaflet panes from overlapping */
+}
