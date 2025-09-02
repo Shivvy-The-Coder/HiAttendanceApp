@@ -1,5 +1,8 @@
 import express from "express";
 import pkg from "pg";
+import dotenv from "dotenv"; // ✅ import dotenv
+
+dotenv.config(); // ✅ load .env variables
 
 const { Pool } = pkg;
 const app = express();
@@ -72,6 +75,26 @@ app.post("/attendance", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to mark attendance" });
+  }
+});
+
+// ✅ Register new employee
+app.post("/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    const result = await pool.query(
+      "INSERT INTO employees (name, email, password) VALUES ($1, $2, $3) RETURNING id",
+      [name, email, password]
+    );
+
+    res.json({
+      message: "Employee registered successfully",
+      employeeId: result.rows[0].id,
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
 });
 
