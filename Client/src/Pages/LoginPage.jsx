@@ -23,7 +23,7 @@ const LoginPage = () => {
             {/* Header with logo and help */}
             <div className='flex justify-between items-center px-2 mb-16'>
               <div className='text-2xl font-bold bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent'>
-                CabRush
+                DayTracker
               </div>
               
               <div className='flex items-center space-x-2 text-gray-300 hover:text-white transition-colors cursor-pointer group'>
