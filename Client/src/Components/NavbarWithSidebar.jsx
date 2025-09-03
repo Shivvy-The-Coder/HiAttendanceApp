@@ -21,7 +21,7 @@ const NavbarWithSidebar = () => {
   { icon: HiOutlineMapPin, title: 'Mark Attendance', subtitle: 'Verify location & log in' },
   { icon: HiOutlineClock, title: 'Attendance Log', subtitle: 'View in/out history' },
   { icon: HiOutlineCalendarDays, title: 'Leaves', subtitle: 'Apply & track leave' },
-  { icon: HiOutlineCreditCard, title: 'Payroll', subtitle: 'Salary details & slips' },
+  // { icon: HiOutlineCreditCard, title: 'Payroll', subtitle: 'Salary details & slips' },
   { icon: HiOutlineClipboardDocumentCheck, title: 'Tasks', subtitle: 'Assigned work & updates' },
   { icon: HiOutlineUserCircle, title: 'Profile', subtitle: 'Employee details' },
   { icon: HiOutlineBell, title: 'Notifications', subtitle: null },

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import NavbarWithSidebar from "../Components/NavbarWithSidebar";
 import CurrentToDestination from "../Components/CurrentToDestination";
 import LeafletMap from "../Components/MapComponent";
-import RideBookingSummary from "../Components/RideBookingSummary";
+// import RideBookingSummary from "../Components/RideBookingSummary";
 import { useLocationContext } from "../context/LocationContext";
 
 const Home = () => {
