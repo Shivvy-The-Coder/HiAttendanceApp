@@ -67,7 +67,7 @@ const OTPVerificationPage = () => {
 
   return (
     <>
-      <div className='bg-gradient-to-br from-blue-950 via-cyan-900 to-green-800 min-h-screen'>
+      <div className='bg-linear-65 from-blue-800/70 to-yellow-400/70 backdrop-blur-3xl max-w-md mx-auto min-h-screen text-shadow-2xs'>
         <div className='flex flex-col justify-between w-[90%] max-w-md mx-auto text-white h-screen relative'>
           
           {/* Subtle background pattern */}
@@ -81,11 +81,11 @@ const OTPVerificationPage = () => {
 
             {/* Header with logo and help */}
             <div className='flex justify-between items-center px-2 mb-16'>
-              <div className='text-2xl font-bold bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent'>
+              <div className='text-2xl font-bold bg-gradient-to-r from-yellow-400 to-pink-500 bg-clip-text text-transparent text-shadow-xs'>
                 DayTracker
               </div>
               
-              <div className='flex items-center space-x-2 text-gray-300 hover:text-white transition-colors cursor-pointer group'>
+              <div className='flex items-center space-x-2 text-white hover:text-white transition-colors cursor-pointer group'>
                 <HiMiniQuestionMarkCircle className='text-xl group-hover:scale-110 transition-transform' />
                 <div className='text-sm font-medium'>Help</div>
               </div>
@@ -96,7 +96,7 @@ const OTPVerificationPage = () => {
               <div className='text-3xl font-bold leading-tight'>
                 Verify Your Number
               </div>
-              <div className='text-gray-400 text-lg leading-relaxed'>
+              <div className='text-white text-lg leading-relaxed'>
                 We've sent a 6-digit code to your phone number. Enter it below to continue
               </div>
             </div>
@@ -113,7 +113,7 @@ const OTPVerificationPage = () => {
                         ? 'border-blue-400 shadow-lg shadow-blue-400/20 bg-gray-700/50 transform scale-110'
                         : digit
                         ? 'border-green-400 bg-gray-700/30'
-                        : 'border-gray-600 hover:border-gray-500'
+                        : 'border-white hover:border-yellow-500'
                     }`}
                     type="text"
                     inputMode="numeric"
@@ -129,18 +129,18 @@ const OTPVerificationPage = () => {
               </div>
               
               {/* Helper text */}
-              <div className='text-xs text-gray-500 px-2 text-center'>
+              <div className='text-xs text-white px-2 text-center'>
                 Enter the 6-digit verification code
               </div>
               
               {/* Resend section */}
               <div className='text-center mt-6'>
-                <div className='text-sm text-gray-400 mb-2'>
+                <div className='text-sm text-white mb-2'>
                   Didn't receive the code?
                 </div>
                 <button 
                   onClick={resendOtp}
-                  className='text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors underline'
+                  className='text-blue-600 hover:text-blue-300 text-sm font-medium transition-colors '
                 >
                   Resend Code
                 </button>
@@ -153,7 +153,7 @@ const OTPVerificationPage = () => {
           <div className='flex flex-col space-y-6 pb-12 relative z-10'>
             
             {/* Security note */}
-            <div className='text-sm text-gray-400 leading-relaxed px-2 text-center'>
+            <div className='text-sm text-gray-700 leading-relaxed px-2 text-center'>
               This helps us keep your account secure. The code will expire in 5 minutes.
             </div>
             
@@ -161,8 +161,8 @@ const OTPVerificationPage = () => {
             <button 
               className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform ${
                 isOtpComplete
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 text-white'
-                  : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  ? 'bg-yellow-400  text-white  shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 '
+                  : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-shadow-2xs cursor-not-allowed'
               }`}
               disabled={!isOtpComplete}
               onClick={() => navigate('/signup')}

@@ -39,7 +39,7 @@ const NavbarWithSidebar = () => {
   return (
     <>
       {/* Top Navbar (now Attendance Header) */}
-      <nav className="bg-gradient-to-br from-yellow-400 via-cyan-900 to-green-500 shadow-lg relative z-40 w-full">
+      <nav className="bg-linear-65 from-yellow-600 to-yellow-400 shadow-lg relative z-40 w-full">
         <div className="px-6 py-4 flex items-center justify-between">
           {/* Left - Menu Button & Title */}
           <div className="flex items-center space-x-3">
@@ -87,7 +87,7 @@ const NavbarWithSidebar = () => {
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="max-w-md mx-auto h-full bg-gradient-to-br from-blue-950 via-cyan-900 to-green-800 flex flex-col shadow-2xl">
+        <div className="max-w-md mx-auto h-full bg-linear-65 from-blue-800/70 to-yellow-400/70 backdrop-blur-3xl flex flex-col shadow-2xl">
           
           {/* Sidebar Header (close button only) */}
           <div className="flex justify-end p-4">
@@ -161,7 +161,7 @@ const NavbarWithSidebar = () => {
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t border-cyan-700 flex-shrink-0 bg-gradient-to-r from-blue-900 to-cyan-800">
+          <div className="p-6 border-t border-cyan-700 flex-shrink-0 bg-gradient-to-r from-green-900/50 to-yellow-800/10">
             <div className="text-center text-cyan-300 text-sm">
               <p>Version 0.0.1</p>
               <p className="mt-1">© 2025 Artificial Computing Machines</p>
