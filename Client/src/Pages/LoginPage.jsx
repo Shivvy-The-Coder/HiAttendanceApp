@@ -8,7 +8,7 @@ const LoginPage = () => {
 
   return (
     <>
-      <div className='bg-gradient-to-br from-gray-900 via-black to-gray-800 min-h-screen'>
+      <div className='bg-gradient-to-br from-blue-950 via-cyan-900 to-green-800 min-h-screen'>
         <div className='flex flex-col justify-between w-[90%] max-w-md mx-auto text-white h-screen relative'>
           
           {/* Subtle background pattern */}
