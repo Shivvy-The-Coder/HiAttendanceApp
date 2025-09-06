@@ -1,204 +1,120 @@
+
+import express from "express";
+import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import pool from "../config/db.js"; 
-import transporter from "../config/nodemailer.js";
+import pkg from "pg";
 
+dotenv.config();
+const { Pool } = pkg;
 
-export const register = async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) {
-    return res.json({ success: false, message: "Missing Details" });
+const app = express();
+app.use(express.json());
+
+// ✅ PostgreSQL connection
+const pool = new Pool({
+  connectionString: process.env.PG_URI,
+  ssl: { rejectUnauthorized: false },
+});
+
+// In-memory OTP store (⚡ better: save in DB with expire time)
+const otpStore = new Map();
+
+// ✅ Step 1: Request OTP (mobile number only)
+app.post("/register/send-otp", async (req, res) => {
+  const { mobile } = req.body;
+  if (!mobile) {
+    return res.status(400).json({ success: false, message: "Mobile number required" });
   }
 
   try {
-    // check if user exists
-    const existing = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+    // check if mobile already registered
+    const existing = await pool.query("SELECT * FROM users WHERE mobile=$1", [mobile]);
     if (existing.rows.length > 0) {
-      return res.json({ success: false, message: "User already exists" });
+      return res.json({ success: false, message: "Mobile already registered" });
+    }
+
+    // generate OTP
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    otpStore.set(mobile, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+    // ⚡ later integrate SMS gateway (Twilio, MSG91, etc.)
+    return res.json({ success: true, message: "OTP sent successfully", otp }); // ⚠️ don’t send OTP in prod
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ success: false, message: "Error sending OTP" });
+  }
+});
+
+// ✅ Step 2: Verify OTP
+app.post("/register/verify-otp", (req, res) => {
+  const { mobile, otp } = req.body;
+  if (!mobile || !otp) {
+    return res.json({ success: false, message: "Mobile and OTP required" });
+  }
+
+  const record = otpStore.get(mobile);
+  if (!record) return res.json({ success: false, message: "No OTP requested for this number" });
+
+  if (record.expiresAt < Date.now()) {
+    otpStore.delete(mobile);
+    return res.json({ success: false, message: "OTP expired" });
+  }
+
+  if (record.otp !== otp) {
+    return res.json({ success: false, message: "Invalid OTP" });
+  }
+
+  // OTP verified ✅
+  otpStore.set(mobile, { verified: true });
+  return res.json({ success: true, message: "OTP verified successfully" });
+});
+
+// ✅ Step 3: Complete Registration (after OTP verified)
+app.post("/register/complete", async (req, res) => {
+  const { mobile, name, email, password } = req.body;
+  if (!mobile || !name || !email || !password) {
+    return res.status(400).json({ success: false, message: "Missing details" });
+  }
+
+  try {
+    // check OTP verified
+    const record = otpStore.get(mobile);
+    if (!record || !record.verified) {
+      return res.json({ success: false, message: "Mobile not verified via OTP" });
     }
 
     // hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // insert user
+    // save to DB
     const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
-      [name, email, hashedPassword]
+      "INSERT INTO users (name, email, password, mobile) VALUES ($1, $2, $3, $4) RETURNING *",
+      [name, email, hashedPassword, mobile]
     );
-    const user = result.rows[0];
 
-    // jwt
+    // clear OTP store
+    otpStore.delete(mobile);
+
+    const user = result.rows[0];
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-    // send welcome email
-    try {
-      await transporter.sendMail({
-        from: process.env.SENDER_EMAIL,
-        to: email,
-        subject: "WELCOME TO Personal Tracker APP",
-        text: `Welcome! Your account has been created with email id: ${email}`,
-      });
-    } catch (err) {
-      console.error("Failed to send welcome email:", err.message);
-    }
-
-    return res.json({ success: true, message: "User created successfully", token, user });
+    return res.json({ success: true, message: "User registered successfully", token, user });
   } catch (err) {
-    return res.json({ success: false, message: err.message });
+    console.error(err.message);
+    return res.status(500).json({ success: false, message: "Error completing registration" });
   }
-};
+});
 
-
-export const login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
-    return res.json({ success: false, message: "Email and password required" });
-  }
-
+// ✅ Test DB
+app.get("/", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
-    const user = result.rows[0];
-    if (!user) {
-      return res.json({ success: false, message: "Invalid Email" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.json({ success: false, message: "Invalid Password" });
-    }
-
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-
-    return res.json({ success: true, token, user });
+    const result = await pool.query("SELECT NOW()");
+    res.json({ message: "DB connected!", time: result.rows[0] });
   } catch (err) {
-    return res.json({ success: false, message: "Error occurred while logging in" });
+    res.status(500).json({ error: "DB connection failed" });
   }
-};
+});
 
-
-export const logout = async (req, res) => {
-  return res.json({ success: true, message: "Logged out (client should delete token)" });
-};
-
-// Sending the OTP verification controller function
-export const sendVerifyOtp = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.userId);
-    if (user.isAccountVerified)
-      return res.json({ success: false, message: "Account already verified" });
-
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    user.verifyOtp = otp;
-    user.verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
-
-    await user.save();
-
-    await transporter.sendMail({
-      from: process.env.SENDER_EMAIL,
-      to: user.email,
-      subject: "Account Verification OTP",
-      text: `Your OTP is ${otp}. Please verify your account using this OTP.`,
-    });
-
-    return res.json({ success: true, message: "Verification OTP has been sent" });
-  } catch (err) {
-    return res.json({ success: false, message: err.message });
-  }
-};
-
-
-// Verifying Email controller function
-export const verifyEmail = async (req, res) => {
-  const { otp } = req.body;
-  const userId = req.userId;
-  if (!userId || !otp)
-    return res.json({ success: false, message: "Missing Details OTP/userID" });
-
-  try {
-    const user = await userModel.findById(userId);
-    if (!user) return res.json({ success: false, message: "User not found" });
-    if (user.verifyOtp === '' || user.verifyOtp !== otp)
-      return res.json({ success: false, message: "Invalid OTP" });
-    if (user.verifyOtpExpireAt < Date.now())
-      return res.json({ success: false, message: "OTP Expired" });
-
-    user.isAccountVerified = true;
-    user.verifyOtp = '';
-    user.verifyOtpExpireAt = 0;
-    await user.save();
-
-    return res.json({ success: true, message: "Email verified successfully" });
-  } catch (err) {
-    return res.json({ success: false, message: err.message });
-  }
-};
-
-// Check is user Authenticated Controller function
-
-export const isAuthenticated = async (req, res) => {
-  try {
-    return res.json({ success: true, message: "User is Authenticated" });
-  } catch (err) {
-    return res.json({ success: false, message: err.message });
-  }
-};
-
-
-// Send OTP controller function
-export const sendResetOtp = async (req, res) => {
-  const { email } = req.body;
-  if (!email)
-    return res.json({ success: false, message: "Email is required" });
-
-  try {
-    const user = await userModel.findOne({ email });
-    if (!user)
-      return res.json({ success: false, message: "User not found" });
-
-    const otp = String(Math.floor(100000 + Math.random() * 900000));
-    user.resetOTP = otp;
-    user.resetOtpExpireAt = Date.now() + 15 * 60 * 1000;
-    await user.save();
-
-    await transporter.sendMail({
-      from: process.env.SENDER_EMAIL,
-      to: user.email,
-      subject: "Account Verification OTP",
-      text: `Your OTP for resetting password is ${otp}.`,
-    });
-
-    return res.json({ success: true, message: "Reset OTP has been sent" });
-  } catch (err) {
-    return res.json({ success: false, message: err.message });
-  }
-};
-
-
-// reset OTP controller function
-
-export const resetPassword = async (req, res) => {
-  const { email, otp, newPassword } = req.body;
-
-  if (!email || !otp || !newPassword)
-    return res.json({ success: false, message: "Email, OTP and new password required" });
-
-  try {
-    const user = await userModel.findOne({ email });
-    if (!user)
-      return res.json({ success: false, message: "User not found" });
-    if (user.resetOTP === '' || user.resetOTP !== otp)
-      return res.json({ success: false, message: "Invalid OTP" });
-    if (user.resetOtpExpireAt < Date.now())
-      return res.json({ success: false, message: "OTP Expired" });
-
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password = hashedPassword;
-    user.resetOTP = '';
-    user.resetOtpExpireAt = 0;
-    await user.save();
-
-    return res.json({ success: true, message: "Password has been changed successfully" });
-  } catch (err) {
-    return res.json({ success: false, message: err.message });
-  }
-};
+const PORT = 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
