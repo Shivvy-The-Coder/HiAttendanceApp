@@ -103,35 +103,35 @@ app.post("/register/verify-otp", async (req, res) => {
 
 
 //Once the user gets the number verified , they need ot fill up their name , email and password along with the phone number which they registered.
-// app.post("/register/complete", async (req, res) => {
-//   const { mobile, name, email, password } = req.body;
-//   if (!mobile || !name || !email || !password) {
-//     return res.status(400).json({ success: false, message: "Missing details" });
-//   }
+app.post("/register/complete", async (req, res) => {
+  const { mobile, name, email, password } = req.body;
+  if (!mobile || !name || !email || !password) {
+    return res.status(400).json({ success: false, message: "Missing details" });
+  }
 
-//   try {
-//     // check OTP verified
-//     const record = otpStore.get(mobile);
-//     if (!record || !record.verified) {
-//       return res.json({ success: false, message: "Mobile not verified via OTP" });
-//     }
+  try {
+    // check OTP verified
+    const record = otpStore.get(mobile);
+    if (!record || !record.verified) {
+      return res.json({ success: false, message: "Mobile not verified via OTP" });
+    }
 
-//     const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-//     // ✅ Update the same row where mobile matches
-//     const result = await pool.query(
-//       "UPDATE employees SET name=$1, email=$2, password=$3 WHERE mobile=$4 RETURNING *",
-//       [name, email, hashedPassword, mobile]
-//     );
+    // ✅ Update the same row where mobile matches
+    const result = await pool.query(
+      "UPDATE employees SET name=$1, email=$2, password=$3 WHERE mobile=$4 RETURNING *",
+      [name, email, hashedPassword, mobile]
+    );
 
-//     otpStore.delete(mobile); // cleanup
+    otpStore.delete(mobile); // cleanup
 
-//     return res.json({ success: true, message: "Registration complete", user: result.rows[0] });
-//   } catch (err) {
-//     console.error(err.message);
-//     return res.status(500).json({ success: false, message: "Error completing registration" });
-//   }
-// });
+    return res.json({ success: true, message: "Registration complete", user: result.rows[0] });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ success: false, message: "Error completing registration" });
+  }
+});
 
 
 
