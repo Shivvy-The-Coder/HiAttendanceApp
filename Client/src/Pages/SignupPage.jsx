@@ -20,27 +20,34 @@ const SignupPage = () => {
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const isFormValid = name.length > 1 && isValidEmail(email) && password.length >= 6;
 
-  const completeRegistration = async () => {
-    if (!isFormValid) return;
-    setLoading(true);
-    setMessage("");
-    try {
-      const res = await axios.post(`${backendURL}/register/complete`, {
-        mobile,
-        name,
-        email,
-        password,
-      });
-      setMessage(res.data.message);
-      if (res.data.success) {
-        navigate("/home");
+ const completeRegistration = async () => {
+  if (!isFormValid) return;
+  setLoading(true);
+  setMessage("");
+  try {
+    const res = await axios.post(`${backendURL}/register/complete`, {
+      mobile,
+      name,
+      email,
+      password,
+    });
+    setMessage(res.data.message);
+
+    if (res.data.success) {
+      // ✅ Save updated user details (name included) to localStorage
+      if (res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
       }
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Error completing registration");
-    } finally {
-      setLoading(false);
+
+      // Navigate to home/dashboard
+      navigate("/home");
     }
-  };
+  } catch (err) {
+    setMessage(err.response?.data?.message || "Error completing registration");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="bg-linear-65 from-blue-800/70 to-yellow-400/70 backdrop-blur-3xl max-w-md mx-auto min-h-screen text-shadow-2xs">
