@@ -59,28 +59,39 @@ const OTPVerificationPage = () => {
 
   const isOtpComplete = otp.every((digit) => digit !== "");
 
-  const verifyOtp = async () => {
-    if (!isOtpComplete) return;
-    setLoading(true);
-    setMessage("");
-    try {
-      const res = await axios.post(`${backendURL}/register/verify-otp`, {
-        mobile,
-        otp: otp.join(""),
-      });
-      setMessage(res.data.message);
+const verifyOtp = async () => {
+  if (!isOtpComplete) return;
+  setLoading(true);
+  setMessage("");
 
-      if (res.data.success) {
-        // Navigate to signup page with mobile
-        localStorage.setItem("token", res.data.token);
-        navigate("/signup", { state: { phoneNumber: mobile } });
+  try {
+    const res = await axios.post(`${backendURL}/register/verify-otp`, {
+      mobile,
+      otp: otp.join(""),
+    });
+
+    setMessage(res.data.message);
+
+    if (res.data.success) {
+      // ✅ Store JWT token
+      localStorage.setItem("token", res.data.token);
+
+      // ✅ Store user details (id, name, mobile) returned by backend
+      if (res.data.user) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
       }
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Error verifying OTP");
-    } finally {
-      setLoading(false);
+
+      // 🔹 Navigate to signup page to complete registration
+      navigate("/signup", { state: { phoneNumber: mobile } });
     }
-  };
+  } catch (err) {
+    setMessage(err.response?.data?.message || "Error verifying OTP");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   const resendOtp = async () => {
     try {

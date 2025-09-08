@@ -1,36 +1,62 @@
-import React, { useState } from 'react';
-import { 
-  HiOutlineBars3, 
-  HiXMark, 
-  HiChevronRight, 
-  HiStar, 
-  HiOutlineClock, 
-  HiOutlineMapPin, 
-  HiOutlineCalendarDays, 
-  HiOutlineShieldCheck, 
-  HiOutlineDocumentText, 
-  HiOutlineCog6Tooth, 
-  HiOutlineBell
-} from 'react-icons/hi2';
+import React, { useState } from "react";
+import {
+  HiOutlineBars3,
+  HiXMark,
+  HiChevronRight,
+  HiStar,
+  HiOutlineClock,
+  HiOutlineMapPin,
+  HiOutlineCalendarDays,
+  HiOutlineShieldCheck,
+  HiOutlineDocumentText,
+  HiOutlineCog6Tooth,
+  HiOutlineBell,
+} from "react-icons/hi2";
+
+
 
 const NavbarWithSidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [storedUser, setStoredUser] = useState(
+    JSON.parse(localStorage.getItem("user"))
+  );
 
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
+    // 🔄 listen for localStorage updates (from OTP/signup page)
+  React.useEffect(() => {
+    const handleStorageChange = () => {
+      setStoredUser(JSON.parse(localStorage.getItem("user")));
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
   const menuItems = [
-    { icon: HiOutlineMapPin, title: 'Mark Attendance', subtitle: 'Verify location & log in' },
-    { icon: HiOutlineShieldCheck, title: 'Security & Safety', subtitle: null },
-    { icon: HiOutlineDocumentText, title: 'Reports', subtitle: 'Performance & logs' },
-    { icon: HiOutlineCog6Tooth, title: 'Settings', subtitle: null },
+    {
+      icon: HiOutlineMapPin,
+      title: "Mark Attendance",
+      subtitle: "Verify location & log in",
+    },
+    { icon: HiOutlineShieldCheck, title: "Security & Safety", subtitle: null },
+    {
+      icon: HiOutlineDocumentText,
+      title: "Reports",
+      subtitle: "Performance & logs",
+    },
+    { icon: HiOutlineCog6Tooth, title: "Settings", subtitle: null },
   ];
 
   const formatTime = (date) =>
-    date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -43,7 +69,7 @@ const NavbarWithSidebar = () => {
         <div className="px-6 py-4 flex items-center justify-between">
           {/* Left - Menu Button & Title */}
           <div className="flex items-center space-x-3">
-            <button 
+            <button
               onClick={toggleSidebar}
               className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
             >
@@ -75,7 +101,7 @@ const NavbarWithSidebar = () => {
 
       {/* Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={toggleSidebar}
         />
@@ -84,14 +110,13 @@ const NavbarWithSidebar = () => {
       {/* Sidebar */}
       <div
         className={`fixed top-0 left-0 w-full h-full z-50 transform transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="max-w-md mx-auto h-full bg-linear-65 from-blue-800/70 to-yellow-400/70 backdrop-blur-3xl flex flex-col shadow-2xl">
-          
           {/* Sidebar Header (close button only) */}
           <div className="flex justify-end p-4">
-            <button 
+            <button
               onClick={toggleSidebar}
               className="p-2 rounded-lg hover:bg-white/20 transition-colors text-white"
             >
@@ -103,11 +128,19 @@ const NavbarWithSidebar = () => {
           <div className="p-6 border-b border-cyan-700 flex-shrink-0">
             <div className="flex items-start space-x-4">
               <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full flex items-center justify-center shadow-md">
-                <span className="text-xl font-bold text-white">JD</span>
+                <span className="text-xl font-bold text-white">
+                  {storedUser?.name
+                    ? storedUser.name.charAt(0).toUpperCase()
+                    : "?"}
+                </span>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white mb-1">Unidentified</h3>
-                <p className="text-cyan-300 text-sm mb-3">+91 98765 43210</p>
+                <h3 className="text-lg font-semibold text-white mb-1">
+                  {storedUser?.name || "Unidentified"}
+                </h3>
+                <p className="text-cyan-300 text-sm mb-3">
+                  {storedUser?.mobile || "+91 XXXXXX XXXX"}
+                </p>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-cyan-200">My Rating</span>
                   <div className="flex items-center space-x-1">
@@ -122,7 +155,6 @@ const NavbarWithSidebar = () => {
           {/* Scrollable Menu */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-4 space-y-4">
-
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col items-center p-5 rounded-2xl bg-white/10 shadow hover:bg-white/20 cursor-pointer transition">
