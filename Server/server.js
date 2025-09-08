@@ -22,43 +22,52 @@ const pool = new Pool({
 // In-memory OTP store (⚡ better: save in DB with expire time)
 const otpStore = new Map();
 
-
-// user will register the phone numer by recieve otp in thier device frim this
+/* ===========================
+   📌 Step 1: Send OTP
+   =========================== */
 app.post("/register/send-otp", async (req, res) => {
   const { mobile } = req.body;
   if (!mobile) {
-    return res.status(400).json({ success: false, message: "Mobile number required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Mobile number required" });
   }
 
   try {
     // check if mobile already registered
-    const existing = await pool.query("SELECT * FROM employees WHERE mobile=$1", [mobile]);
+    const existing = await pool.query(
+      "SELECT * FROM employees WHERE mobile=$1",
+      [mobile]
+    );
     if (existing.rows.length > 0) {
-      return res.json({ success: false, message: "Mobile already registered" });
+      return res.json({
+        success: false,
+        message: "Mobile already registered",
+      });
     }
 
     // generate OTP
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     otpStore.set(mobile, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
-    // ✅ log OTP in console (debugging only)
     console.log(`📲 OTP for ${mobile}: ${otp}`);
 
-    // send only a safe message back to client
-return res.json({
-        success: true,
-        message: "OTP sent successfully",
-        otp, // 👈 this will return the OTP to the client
-      });
-
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      otp, // ⚠️ for dev only, remove in production
+    });
   } catch (err) {
     console.error(err.message);
-    return res.status(500).json({ success: false, message: "Error sending OTP" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error sending OTP" });
   }
 });
 
-// OTP verufcation process will take place and save the phonenumber to employees table making other colpumns (temporary null)
-
+/* ===========================
+   📌 Step 2: Verify OTP
+   =========================== */
 app.post("/register/verify-otp", async (req, res) => {
   const { mobile, otp } = req.body;
 
@@ -66,54 +75,62 @@ app.post("/register/verify-otp", async (req, res) => {
     return res.json({ success: false, message: "Mobile and OTP required" });
   }
 
-  const record = otpStore.get(mobile);
-  if (!record) return res.json({ success: false, message: "No OTP requested for this number" });
-
-  if (record.expiresAt < Date.now()) {
-    otpStore.delete(mobile);
-    return res.json({ success: false, message: "OTP expired" });
-  }
-
-  if (record.otp !== otp) {
-    return res.json({ success: false, message: "Invalid OTP" });
-  }
-
   try {
-    // Insert mobile into employees table if not already present
+    const record = otpStore.get(mobile);
+    if (!record || record.otp !== otp || record.expiresAt < Date.now()) {
+      return res.json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    // ✅ Mark as verified
+    otpStore.set(mobile, { ...record, verified: true });
+
+    // insert or fetch user (only mobile for now)
     const result = await pool.query(
       "INSERT INTO employees (mobile) VALUES ($1) ON CONFLICT (mobile) DO NOTHING RETURNING *",
       [mobile]
     );
 
-    // Get the user row (either newly inserted or existing)
-    const user = result.rows[0] || (await pool.query("SELECT * FROM employees WHERE mobile=$1", [mobile])).rows[0];
+    const user =
+      result.rows[0] ||
+      (await pool.query( "SELECT id, name, mobile, email FROM employees WHERE mobile=$1", [mobile]))
+        .rows[0];
 
-    // ✅ Generate JWT
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
-    // Mark as verified in memory
-    otpStore.set(mobile, { verified: true });
-
-    return res.json({ success: true, message: "OTP verified & mobile saved", token });
+    return res.json({
+      success: true,
+      message: "OTP verified",
+      token,
+      user, // {id, mobile, name: null initially}
+    });
   } catch (err) {
     console.error(err.message);
-    return res.status(500).json({ success: false, message: "Error saving mobile" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error verifying OTP" });
   }
 });
 
-
-//Once the user gets the number verified , they need ot fill up their name , email and password along with the phone number which they registered.
+/* ===========================
+   📌 Step 3: Complete Registration
+   =========================== */
 app.post("/register/complete", async (req, res) => {
   const { mobile, name, email, password } = req.body;
   if (!mobile || !name || !email || !password) {
-    return res.status(400).json({ success: false, message: "Missing details" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing details" });
   }
 
   try {
-    // check OTP verified
     const record = otpStore.get(mobile);
     if (!record || !record.verified) {
-      return res.json({ success: false, message: "Mobile not verified via OTP" });
+      return res.json({
+        success: false,
+        message: "Mobile not verified via OTP",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -126,45 +143,47 @@ app.post("/register/complete", async (req, res) => {
 
     otpStore.delete(mobile); // cleanup
 
-    return res.json({ success: true, message: "Registration complete", user: result.rows[0] });
+    return res.json({
+      success: true,
+      message: "Registration complete",
+      user: result.rows[0],
+    });
   } catch (err) {
     console.error(err.message);
-    return res.status(500).json({ success: false, message: "Error completing registration" });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error completing registration" });
   }
 });
 
-
-
-
-// app.get("/user/data", userAuth, async (req, res) => {
-//   const user = await Employee.findById(req.userId); 
-//   res.json({ success: true, user: { name: user.name, mobile: user.mobile } });
-// });
-
+/* ===========================
+   📌 Protected User Route
+   =========================== */
 const userRouter = express.Router();
+app.use("/user", userRouter);
 
 userRouter.get("/data", userAuth, async (req, res) => {
   try {
-    // req.userId comes from your JWT middleware
     const userId = req.userId;
-
     const query = "SELECT id, name, mobile, email FROM employees WHERE id = $1";
     const { rows } = await pool.query(query, [userId]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
-    const user = rows[0];
-
-    res.json({ success: true, data: user });
+    res.json({ success: true, data: rows[0] });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-
+/* ===========================
+   📌 Health Check
+   =========================== */
 app.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
@@ -174,5 +193,10 @@ app.get("/", async (req, res) => {
   }
 });
 
+/* ===========================
+   🚀 Start Server
+   =========================== */
 const PORT = 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);
