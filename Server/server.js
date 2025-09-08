@@ -5,6 +5,8 @@ import userAuth from "./middleware/userauth.js"; // adjust path if needed
 import jwt from "jsonwebtoken";
 import pkg from "pg";
 import cors from "cors";
+import axios from "axios";
+
 
 dotenv.config();
 const { Pool } = pkg;
@@ -12,6 +14,28 @@ const { Pool } = pkg;
 const app = express();
 app.use(express.json());
 app.use(cors()); // allow all origins (development only)
+
+// Function to send SMS via SMSINDIAHUB API using APIKey
+const sendOtpSms = async ({ mobile, otp }) => {
+  try {
+    const APIKey = process.env.SMS_API_KEY; // your API Key
+    const senderid = "SMSHUB";               // approved sender ID
+    const fl = 0;                            // flash SMS flag
+    const gwid = 2;                          // gateway ID
+
+   const msg = `Welcome to the NXLGAMES powered by SMSINDIAHUB. Your OTP for registration is ${otp}`;
+
+
+    const url = `https://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=${APIKey}&msisdn=${mobile}&sid=${senderid}&msg=${encodeURIComponent(msg)}&fl=${fl}&gwid=${gwid}`;
+
+    const response = await axios.get(url);
+    console.log("SMS sent successfully:", response.data);
+    return response.data;
+  } catch (err) {
+    console.error("Error sending SMS:", err.response?.data || err.message);
+    throw err;
+  }
+};
 
 // ✅ PostgreSQL connection
 const pool = new Pool({
@@ -51,6 +75,8 @@ app.post("/register/send-otp", async (req, res) => {
     otpStore.set(mobile, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
     console.log(`📲 OTP for ${mobile}: ${otp}`);
+      // send SMS via SMSINDIAHUB
+    await sendOtpSms({ mobile, otp });
 
     return res.json({
       success: true,
