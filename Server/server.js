@@ -23,8 +23,8 @@ const sendOtpSms = async ({ mobile, otp }) => {
     const fl = 0;                            // flash SMS flag
     const gwid = 2;                          // gateway ID
 
-   const msg = `Welcome to the NXLGAMES powered by SMSINDIAHUB. Your OTP for registration is ${otp}`;
-
+    const brand = "DayTracker Attendance System";
+    const msg = `Welcome to the ${brand} powered by SMSINDIAHUB. Your OTP for registration is ${otp}`;
 
     const url = `https://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=${APIKey}&msisdn=${mobile}&sid=${senderid}&msg=${encodeURIComponent(msg)}&fl=${fl}&gwid=${gwid}`;
 
