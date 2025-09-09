@@ -13,15 +13,15 @@ const { Pool } = pkg;
 
 const app = express();
 app.use(express.json());
-app.use(cors()); // allow all origins (development only)
+app.use(cors()); 
 
-// Function to send SMS via SMSINDIAHUB API using APIKey
+// function for the sending otp via API
 const sendOtpSms = async ({ mobile, otp }) => {
   try {
-    const APIKey = process.env.SMS_API_KEY; // your API Key
-    const senderid = "SMSHUB";               // approved sender ID
-    const fl = 0;                            // flash SMS flag
-    const gwid = 2;                          // gateway ID
+    const APIKey = process.env.SMS_API_KEY; 
+    const senderid = "SMSHUB";              
+    const fl = 0;                           
+    const gwid = 2;                         
 
    const msg = `Welcome to the NXLGAMES powered by SMSINDIAHUB. Your OTP for registration is ${otp}`;
 
@@ -37,7 +37,7 @@ const sendOtpSms = async ({ mobile, otp }) => {
   }
 };
 
-// ✅ PostgreSQL connection
+// PostgreSQL connection
 const pool = new Pool({
   connectionString: process.env.PG_URI,
   ssl: { rejectUnauthorized: false },
@@ -46,9 +46,7 @@ const pool = new Pool({
 // In-memory OTP store (⚡ better: save in DB with expire time)
 const otpStore = new Map();
 
-/* ===========================
-   📌 Step 1: Send OTP
-   =========================== */
+// Sending OTP 
 app.post("/register/send-otp", async (req, res) => {
   const { mobile } = req.body;
   if (!mobile) {
@@ -91,9 +89,7 @@ app.post("/register/send-otp", async (req, res) => {
   }
 });
 
-/* ===========================
-   📌 Step 2: Verify OTP
-   =========================== */
+// verifying OTP
 app.post("/register/verify-otp", async (req, res) => {
   const { mobile, otp } = req.body;
 
@@ -129,7 +125,7 @@ app.post("/register/verify-otp", async (req, res) => {
       success: true,
       message: "OTP verified",
       token,
-      user, // {id, mobile, name: null initially}
+      user,
     });
   } catch (err) {
     console.error(err.message);
@@ -139,9 +135,7 @@ app.post("/register/verify-otp", async (req, res) => {
   }
 });
 
-/* ===========================
-   📌 Step 3: Complete Registration
-   =========================== */
+// complete registration
 app.post("/register/complete", async (req, res) => {
   const { mobile, name, email, password } = req.body;
   if (!mobile || !name || !email || !password) {
@@ -161,7 +155,7 @@ app.post("/register/complete", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Update the same row where mobile matches
+// update only the rows where the phone number matches
     const result = await pool.query(
       "UPDATE employees SET name=$1, email=$2, password=$3 WHERE mobile=$4 RETURNING *",
       [name, email, hashedPassword, mobile]
@@ -182,9 +176,7 @@ app.post("/register/complete", async (req, res) => {
   }
 });
 
-/* ===========================
-   📌 Protected User Route
-   =========================== */
+// user Router 
 const userRouter = express.Router();
 app.use("/user", userRouter);
 
@@ -207,9 +199,61 @@ userRouter.get("/data", userAuth, async (req, res) => {
   }
 });
 
-/* ===========================
-   📌 Health Check
-   =========================== */
+// user login
+// ===============================
+// 🚪 User Login
+// ===============================
+app.post("/login", async (req, res) => {
+  const { mobile, password } = req.body;
+
+  if (!mobile || !password) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Mobile and password required" });
+  }
+
+  try {
+    // check if user exists
+    const { rows } = await pool.query(
+      "SELECT * FROM employees WHERE mobile=$1",
+      [mobile]
+    );
+
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    const user = rows[0];
+
+    // compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid password" });
+    }
+
+    // create JWT
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: { id: user.id, name: user.name, mobile: user.mobile, email: user.email },
+    });
+  } catch (err) {
+    console.error("Login error:", err.message);
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error during login" });
+  }
+});
+
 app.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");

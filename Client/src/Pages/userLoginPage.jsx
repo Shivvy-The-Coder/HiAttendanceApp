@@ -3,32 +3,43 @@ import { HiMiniQuestionMarkCircle } from "react-icons/hi2";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const LoginPage = () => {
+const UserLoginPage = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  const backendURL = "http://localhost:5000"; // move to .env later
+  const backendURL = "http://localhost:5000"; // later move to .env
 
-  const handleSendOtp = async () => {
-    if (phoneNumber.length !== 10) return;
+  const handleLogin = async () => {
+    if (phoneNumber.length !== 10 || !password) {
+      setMessage("Enter valid 10-digit phone number and password");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
     try {
-      const res = await axios.post(`${backendURL}/register/send-otp`, {
+      const res = await axios.post(`${backendURL}/login`, {
         mobile: phoneNumber,
+        password,
       });
+
       setMessage(res.data.message);
 
       if (res.data.success) {
-        // Navigate to OTP verification page with phone number
-        navigate("/verify", { state: { phoneNumber } });
+        // ✅ store token + user
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+
+        // redirect to home/dashboard
+        navigate("/home");
       }
     } catch (err) {
-      setMessage(err.response?.data?.message || "Error sending OTP");
+      setMessage(err.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -60,59 +71,46 @@ const LoginPage = () => {
           {/* Welcome text */}
           <div className="flex flex-col space-y-4 mb-12">
             <div className="text-3xl font-bold leading-tight text-white">
-              What's Your Number?
+              Welcome Back!
             </div>
             <div className="text-white-100 text-lg leading-relaxed">
-              Enter your phone number to get started and join thousands of users
+              Login with your phone number and password
             </div>
           </div>
 
           {/* Phone input */}
-          <div className="relative mb-8">
-            <div
-              className={`relative transition-all duration-300 ${
-                isFocused ? "transform scale-105" : ""
+          <div className="relative mb-6">
+            <input
+              className={`w-full bg-gray-900/10 backdrop-blur-sm border-2 rounded-2xl px-6 py-4 text-lg text-white placeholder-yellow-200/70 transition-all duration-300 focus:outline-none ${
+                isFocused
+                  ? "border-yellow-400 shadow-lg shadow-yellow-400/20 bg-gray-800/50"
+                  : "border-white hover:border-yellow-300"
               }`}
-            >
-              <input
-                className={`w-full bg-gray-900/10 backdrop-blur-sm border-2 rounded-2xl px-6 py-4 text-lg text-white placeholder-yellow-200/70 transition-all duration-300 focus:outline-none ${
-                  isFocused
-                    ? "border-yellow-400 shadow-lg shadow-yellow-400/20 bg-gray-800/50"
-                    : "border-white hover:border-yellow-300"
-                }`}
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) =>
-                  setPhoneNumber(e.target.value.replace(/\D/g, ""))
-                }
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder="Enter 10-digit phone number"
-                maxLength={10}
-              />
-
-              {/* Input decoration */}
-              <div
-                className={`absolute right-4 top-1/2 transform -translate-y-1/2 w-2 h-2 rounded-full transition-all duration-300 ${
-                  phoneNumber.length === 10
-                    ? "bg-green-400"
-                    : "bg-yellow-200/40"
-                }`}
-              ></div>
-            </div>
-
-            {/* Helper text */}
-            <div className="text-xs text-white-200 mt-2 px-2">
-              We'll send you a verification code
-            </div>
-
-            {/* Message from backend */}
-            {message && (
-              <div className="text-sm text-center text-red-400 mt-2">
-                {message}
-              </div>
-            )}
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ""))}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="Enter 10-digit phone number"
+              maxLength={10}
+            />
           </div>
+
+          {/* Password input */}
+          <div className="relative mb-6">
+            <input
+              className="w-full bg-gray-900/10 backdrop-blur-sm border-2 border-white rounded-2xl px-6 py-4 text-lg text-white placeholder-yellow-200/70 transition-all duration-300 focus:outline-none focus:border-yellow-400 focus:shadow-lg focus:shadow-yellow-400/20 bg-gray-800/50"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
+
+          {/* Backend message */}
+          {message && (
+            <div className="text-sm text-center text-red-400 mt-2">{message}</div>
+          )}
         </div>
 
         {/* Bottom section */}
@@ -129,38 +127,22 @@ const LoginPage = () => {
             .
           </div>
 
-          {/* Continue button */}
+          {/* Login button */}
           <button
             className={`w-full py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform ${
-              phoneNumber.length === 10
+              phoneNumber.length === 10 && password
                 ? "bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 shadow-lg shadow-yellow-400/25 hover:shadow-yellow-500/40 hover:scale-105 text-white"
                 : "bg-blue-400/70 text-white cursor-not-allowed"
             }`}
-            disabled={phoneNumber.length !== 10 || loading}
-            onClick={handleSendOtp}
+            disabled={phoneNumber.length !== 10 || !password || loading}
+            onClick={handleLogin}
           >
-            {loading
-              ? "Sending OTP..."
-              : phoneNumber.length === 10
-              ? "Continue"
-              : "Enter Phone Number"}
+            {loading ? "Logging in..." : "Login"}
           </button>
-
-          {/* Already a user button */}
-          <div className="text-center mt-4">
-            <span className="text-white">Already a user? </span>
-            <span
-              onClick={() => navigate("/user-login")}
-              className="text-blue-900 text-shadow-2xs font-semibold cursor-pointer hover:underline hover:text-green-300 transition-colors"
-            >
-              Login
-            </span>
-          </div>
-
         </div>
       </div>
     </div>
   );
 };
 
-export default LoginPage;
+export default UserLoginPage;
