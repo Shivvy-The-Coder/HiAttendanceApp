@@ -13,7 +13,7 @@ import {
   HiOutlineBell,
 } from "react-icons/hi2";
 
-
+import { LogOut } from "lucide-react";
 
 const NavbarWithSidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -27,7 +27,7 @@ const NavbarWithSidebar = () => {
     return () => clearInterval(timer);
   }, []);
 
-    // 🔄 listen for localStorage updates (from OTP/signup page)
+  // 🔄 listen for localStorage updates (from OTP/signup page)
   React.useEffect(() => {
     const handleStorageChange = () => {
       setStoredUser(JSON.parse(localStorage.getItem("user")));
@@ -64,7 +64,7 @@ const NavbarWithSidebar = () => {
 
   return (
     <>
-      {/* Top Navbar (now Attendance Header) */}
+      {/* Top Navbar (Attendance Header) */}
       <nav className="bg-linear-65 from-yellow-600 to-yellow-400 shadow-lg relative z-40 w-full">
         <div className="px-6 py-4 flex items-center justify-between">
           {/* Left - Menu Button & Title */}
@@ -114,7 +114,7 @@ const NavbarWithSidebar = () => {
         }`}
       >
         <div className="max-w-md mx-auto h-full bg-linear-65 from-blue-800/70 to-yellow-400/70 backdrop-blur-3xl flex flex-col shadow-2xl">
-          {/* Sidebar Header (close button only) */}
+          {/* Sidebar Header (close button) */}
           <div className="flex justify-end p-4">
             <button
               onClick={toggleSidebar}
@@ -124,9 +124,10 @@ const NavbarWithSidebar = () => {
             </button>
           </div>
 
-          {/* User Profile */}
+          {/* User Profile with Logout */}
           <div className="p-6 border-b border-cyan-700 flex-shrink-0">
-            <div className="flex items-start space-x-4">
+            <div className="flex items-center space-x-4">
+              {/* Avatar */}
               <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-green-500 rounded-full flex items-center justify-center shadow-md">
                 <span className="text-xl font-bold text-white">
                   {storedUser?.name
@@ -134,6 +135,8 @@ const NavbarWithSidebar = () => {
                     : "?"}
                 </span>
               </div>
+
+              {/* User Info */}
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white mb-1">
                   {storedUser?.name || "Unidentified"}
@@ -148,6 +151,19 @@ const NavbarWithSidebar = () => {
                     <span className="text-white font-medium">4.8</span>
                   </div>
                 </div>
+              </div>
+
+              {/* 🔴 Logout at extreme right */}
+              <div
+                onClick={() => {
+                  localStorage.removeItem("user");
+                  localStorage.removeItem("token");
+                  window.location.href = "/";
+                }}
+                className="flex items-center gap-1 text-white cursor-pointer hover:text-blue-500 transition-colors"
+              >
+                <LogOut size={18} />
+                <span className="font-medium text-sm">Logout</span>
               </div>
             </div>
           </div>

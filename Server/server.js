@@ -200,9 +200,6 @@ userRouter.get("/data", userAuth, async (req, res) => {
 });
 
 // user login
-// ===============================
-// 🚪 User Login
-// ===============================
 app.post("/login", async (req, res) => {
   const { mobile, password } = req.body;
 
