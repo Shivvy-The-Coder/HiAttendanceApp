@@ -6,16 +6,16 @@ import {
   InfoWindow,
   useLoadScript,
 } from "@react-google-maps/api";
-import { CheckCircle, XCircle, Navigation } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 
 const AttendanceApp = () => {
   const [position, setPosition] = useState(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [checkInTime, setCheckInTime] = useState(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   // Workplace info
   const workplaceLocation = { lat: 23.355639517775323, lng: 85.35911217785096 };
-  const workplaceName = "Artificial Computing Machines, STPI, Ranchi";
   const allowedRadius = 200;
 
   // Load Google Maps API
@@ -61,17 +61,49 @@ const AttendanceApp = () => {
       workplaceLocation.lng
     ) <= allowedRadius;
 
-  const handleCheckIn = () => {
-    if (isWithinWorkplace) {
-      setIsCheckedIn(true);
-      setCheckInTime(new Date());
+  // Example: retrieve from localStorage
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const handleCheckIn = async () => {
+    if (isWithinWorkplace && user) {
+      try {
+        const res = await fetch("http://localhost:5000/attendance/checkin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mobile: user.mobile, // ✅ match DB column
+            name: user.name,
+          }),
+        });
+
+        const data = await res.json();
+        console.log("✅ Check-in:", data);
+        setIsCheckedIn(true);
+        setCheckInTime(new Date(data.login_time)); // use DB time
+      } catch (err) {
+        console.error("❌ Check-in error:", err);
+      }
     }
   };
 
-  const handleCheckOut = () => {
-    if (isCheckedIn) {
-      setIsCheckedIn(false);
-      setCheckInTime(null);
+  const handleCheckOut = async () => {
+    if (isCheckedIn && user) {
+      try {
+        const res = await fetch("http://localhost:5000/attendance/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mobile: user.mobile, // ✅ same as check-in
+          }),
+        });
+
+        const data = await res.json();
+        console.log("✅ Check-out:", data);
+        setIsCheckedIn(false);
+        setCheckInTime(null);
+      } catch (err) {
+        console.error("❌ Check-out error:", err);
+      }
     }
   };
 
@@ -153,6 +185,7 @@ const AttendanceApp = () => {
           >
             {/* Workplace marker */}
             <Marker position={workplaceLocation} />
+
             <Circle
               center={workplaceLocation}
               radius={allowedRadius}
@@ -166,14 +199,23 @@ const AttendanceApp = () => {
 
             {/* User marker */}
             {position && (
-              <Marker position={position}>
-                <InfoWindow position={position}>
-                  <div>
-                    <strong>Your Location</strong>
-                    <p className="text-sm text-gray-600">Current position</p>
-                  </div>
-                </InfoWindow>
-              </Marker>
+              <>
+                <Marker
+                  position={position}
+                  onClick={() => setShowInfo(true)}
+                />
+                {showInfo && (
+                  <InfoWindow
+                    position={position}
+                    onCloseClick={() => setShowInfo(false)}
+                  >
+                    <div>
+                      <strong>Your Location</strong>
+                      <p className="text-sm text-gray-600">Current position</p>
+                    </div>
+                  </InfoWindow>
+                )}
+              </>
             )}
           </GoogleMap>
         </div>
@@ -208,7 +250,8 @@ const AttendanceApp = () => {
           </div>
           {!isWithinWorkplace && position && (
             <p className="text-sm text-orange-600 mt-4 text-center">
-              You need to be within {allowedRadius}m of your workplace to check in
+              You need to be within {allowedRadius}m of your workplace to check
+              in
             </p>
           )}
         </div>

@@ -260,9 +260,43 @@ app.get("/", async (req, res) => {
   }
 });
 
-/* ===========================
-   🚀 Start Server
-   =========================== */
+
+// Check-in
+app.post("/attendance/checkin", async (req, res) => {
+  const { mobile, name } = req.body; // ✅ use mobile
+  try {
+    const result = await pool.query(
+      `INSERT INTO attendance (mobile, name, login_time, attendance_marked)
+       VALUES ($1, $2, NOW(), true)
+       RETURNING *`,
+      [mobile, name]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Check-out
+app.post("/attendance/checkout", async (req, res) => {
+  const { mobile } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE attendance
+       SET logout_time = NOW(), attendance_marked = false
+       WHERE mobile = $1
+       RETURNING *`,
+      [mobile]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
 const PORT = 5000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
