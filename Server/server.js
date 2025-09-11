@@ -262,14 +262,20 @@ app.get("/", async (req, res) => {
 
 
 // Check-in
+// Check-in
 app.post("/attendance/checkin", async (req, res) => {
-  const { mobile, name } = req.body; // ✅ use mobile
+  const { mobile, name } = req.body; // use mobile
   try {
+    // Get current date and time
+    const now = new Date();
+    const currentDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const loginTime = now.toLocaleTimeString("en-US", { hour12: true }); // 12-hour format
+
     const result = await pool.query(
-      `INSERT INTO attendance (mobile, name, login_time, attendance_marked)
-       VALUES ($1, $2, NOW(), true)
+      `INSERT INTO attendance (mobile, name, date,logintime, attendance_marked)
+       VALUES ($1, $2, $3, $4, true)
        RETURNING *`,
-      [mobile, name]
+      [mobile, name, currentDate, loginTime]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -281,18 +287,25 @@ app.post("/attendance/checkin", async (req, res) => {
 app.post("/attendance/checkout", async (req, res) => {
   const { mobile } = req.body;
   try {
+    // Get current time in 12-hour format (same as login)
+    const logoutTime = new Date().toLocaleTimeString("en-US", {
+      hour12: true,
+    });
+
     const result = await pool.query(
       `UPDATE attendance
-       SET logout_time = NOW(), attendance_marked = false
-       WHERE mobile = $1
+       SET logout_time = $2, attendance_marked = true
+       WHERE mobile = $1 AND date = CURRENT_DATE
        RETURNING *`,
-      [mobile]
+      [mobile, logoutTime]
     );
+
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 

@@ -64,48 +64,54 @@ const AttendanceApp = () => {
   // Example: retrieve from localStorage
   const user = JSON.parse(localStorage.getItem("user"));
 
-  const handleCheckIn = async () => {
-    if (isWithinWorkplace && user) {
-      try {
-        const res = await fetch("http://localhost:5000/attendance/checkin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mobile: user.mobile, // ✅ match DB column
-            name: user.name,
-          }),
-        });
+const handleCheckIn = async () => {
+  if (isWithinWorkplace && user) {
+    try {
+      const res = await fetch("http://localhost:5000/attendance/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mobile: user.mobile, // match DB column
+          name: user.name,
+        }),
+      });
 
-        const data = await res.json();
-        console.log("✅ Check-in:", data);
-        setIsCheckedIn(true);
-        setCheckInTime(new Date(data.login_time)); // use DB time
-      } catch (err) {
-        console.error("❌ Check-in error:", err);
-      }
+      const data = await res.json();
+      console.log("✅ Check-in:", data);
+
+      setIsCheckedIn(true);
+
+      // Combine date and loginTime from DB to create a Date object
+      const loginDateTime = new Date(`${data.date} ${data.loginTime}`);
+      setCheckInTime(loginDateTime); // display in your UI
+    } catch (err) {
+      console.error("❌ Check-in error:", err);
     }
-  };
+  }
+};
 
-  const handleCheckOut = async () => {
-    if (isCheckedIn && user) {
-      try {
-        const res = await fetch("http://localhost:5000/attendance/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mobile: user.mobile, // ✅ same as check-in
-          }),
-        });
+const handleCheckOut = async () => {
+  if (isCheckedIn && user) {
+    try {
+      const res = await fetch("http://localhost:5000/attendance/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mobile: user.mobile, // same as check-in
+        }),
+      });
 
-        const data = await res.json();
-        console.log("✅ Check-out:", data);
-        setIsCheckedIn(false);
-        setCheckInTime(null);
-      } catch (err) {
-        console.error("❌ Check-out error:", err);
-      }
+      const data = await res.json();
+      console.log("✅ Check-out:", data);
+
+      setIsCheckedIn(false);
+      setCheckInTime(null);
+    } catch (err) {
+      console.error("❌ Check-out error:", err);
     }
-  };
+  }
+};
+
 
   const formatTime = (date) =>
     date.toLocaleTimeString("en-US", {
