@@ -37,6 +37,7 @@ app.post("/register/send-otp", async (req, res) => {
     // generate OTP
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     otpStore.set(mobile, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+    console.log(otp);
 
     // ⚡ later integrate SMS gateway (Twilio, MSG91, etc.)
     return res.json({ success: true, message: "OTP sent successfully", otp }); // ⚠️ don’t send OTP in prod

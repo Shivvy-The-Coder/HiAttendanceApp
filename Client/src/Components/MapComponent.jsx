@@ -14,8 +14,22 @@ const AttendanceApp = () => {
   const [checkInTime, setCheckInTime] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
 
+
+  
+
+// Address
+// Samlong, Ranchi, 834001, Jharkhand, India
+
+// DD (decimal degrees)
+// Latitude	
+// 23.3504768  23.355639517775323 <- ACM office Lats
+// Longitude	
+// 85.344256   85.35911217785096 <-- ACM Office Longs
+
+
+
   // Workplace info
-  const workplaceLocation = { lat: 23.355639517775323, lng: 85.35911217785096 };
+  const workplaceLocation = { lat:  23.3589633, lng:85.3510857};
   const allowedRadius = 200;
 
   // Load Google Maps API

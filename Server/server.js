@@ -262,7 +262,6 @@ app.get("/", async (req, res) => {
 
 
 // Check-in
-// Check-in
 app.post("/attendance/checkin", async (req, res) => {
   const { mobile, name } = req.body; // use mobile
   try {

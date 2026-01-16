@@ -3,3 +3,7 @@
 
 #environment Variables
 .env
+backup.sql
+gps_schema.sql
+gps_system_schema.sql
+schema.sql
