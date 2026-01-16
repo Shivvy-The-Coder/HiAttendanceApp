@@ -37,37 +37,37 @@ const sendOtpSms = async ({ mobile, otp }) => {
   }
 };
 
-// PostgreSQL connection
-const pool = new Pool({
-  connectionString: process.env.PG_URI,
-  ssl: { rejectUnauthorized: false },
-});
+// PostgreSQL connection  
+const pool = new Pool({  
+  connectionString: process.env.PG_URI,  
+  ssl: { rejectUnauthorized: false },  
+});  
 
 // In-memory OTP store (⚡ better: save in DB with expire time)
 const otpStore = new Map();
-
-// Sending OTP 
-app.post("/register/send-otp", async (req, res) => {
-  const { mobile } = req.body;
-  if (!mobile) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Mobile number required" });
-  }
-
-  try {
-    // check if mobile already registered
-    const existing = await pool.query(
-      "SELECT * FROM employees WHERE mobile=$1",
-      [mobile]
-    );
-    if (existing.rows.length > 0) {
-      return res.json({
-        success: false,
-        message: "Mobile already registered",
-      });
-    }
-
+ 
+// Sending OTP  
+app.post("/register/send-otp", async (req, res) => { 
+  const { mobile } = req.body; 
+  if (!mobile) { 
+    return res 
+      .status(400) 
+      .json({ success: false, message: "Mobile number required" }); 
+  } 
+ 
+  try { 
+    // check if mobile already registered 
+    const existing = await pool.query( 
+      "SELECT * FROM employees WHERE mobile=$1", 
+      [mobile] 
+    ); 
+    if (existing.rows.length > 0) { 
+      return res.json({ 
+        success: false, 
+        message: "Mobile already registered", 
+      }); 
+    } 
+ 
     // generate OTP
     const otp = String(Math.floor(100000 + Math.random() * 900000));
     otpStore.set(mobile, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
